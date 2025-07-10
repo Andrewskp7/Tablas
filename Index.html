@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rutina de Gimnasio Interactiva</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilo para la barra de desplazamiento */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .exercise-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .exercise-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        #modal {
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Contenedor Principal -->
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Rutina para Principiantes</h1>
+            <p class="text-lg text-gray-600 mt-2">Toca un ejercicio para ver cómo se hace.</p>
+        </header>
+
+        <main id="workout-plan" class="space-y-8">
+            <!-- Rutinas se insertarán aquí dinámicamente -->
+        </main>
+        
+        <footer class="text-center mt-12 text-gray-500">
+            <p>*Usa una carga que permita finalizar la última repetición con técnica estricta y esfuerzo alto.</p>
+        </footer>
+    </div>
+
+    <!-- Modal para descripción del ejercicio -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+        <div id="modal-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto transform transition-all duration-300 ease-out scale-95 opacity-0">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 id="modal-title" class="text-2xl font-bold text-gray-900"></h2>
+                        <p id="modal-details" class="text-sm text-gray-500 mt-1"></p>
+                    </div>
+                    <button id="close-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="modal-description" class="text-gray-700 space-y-2">
+                    <!-- Descripción se insertará aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- BASE DE DATOS DE EJERCICIOS ---
+        // Aquí almacenamos toda la información del PDF para fácil acceso.
+        const workoutData = [
+            {
+                day: "Día 1",
+                group: "Empuje",
+                color: "bg-blue-500",
+                exercises: [
+                    { name: "Press de banca con barra", series: 3, reps: "8-10", group: "Pecho", description: "Tumbada, pies firmes en el suelo. Barra a la altura de los ojos. Baja hasta la linea media del pecho manteniendo escápulas retraídas y empuja sin bloquear codos." },
+                    { name: "Press militar mancuernas", series: 3, reps: "10-12", group: "Hombro", description: "Sentada con respaldo. Eleva las mancuernas desde altura orejas hasta casi extender codos. Evita arquear la zona lumbar; core activo." },
+                    { name: "Press inclinado mancuernas", series: 3, reps: "10-12", group: "Pecho sup.", description: "Banco a 30-45°. Baja las mancuernas al borde superior del pecho y empuja. Incide en pectoral superior y deltoides anterior." },
+                    { name: "Extensión triceps polea", series: 2, reps: "12-15", group: "Tríceps", description: "Codos pegados al costado; extiende antebrazos hasta que queden paralelos al suelo. Evita balancear hombros." },
+                    { name: "Crunch máquina abdominal", series: 2, reps: "12-15", group: "Core", description: "Ajusta el cojín sobre el pecho. Flexiona la columna desde la parte alta manteniendo cadera estable; evita tirar de cuello." }
+                ]
+            },
+            {
+                day: "Día 2",
+                group: "Tirón",
+                color: "bg-green-500",
+                exercises: [
+                    { name: "Jalón al pecho polea", series: 3, reps: "10-12", group: "Espalda", description: "Barra abierta. Tira hacia la parte superior del pecho sacando pecho y juntando escápulas. Controla la subida." },
+                    { name: "Remo mancuerna 1 mano", series: 3, reps: "10-12", group: "Espalda", description: "Apoya rodilla y mano contraria en banco. Tira del peso hacia la cadera manteniendo tronco estable." },
+                    { name: "Hiperextensiones banco 45°", series: 3, reps: "12-15", group: "Esp.-Femoral", description: "Caderas sobre el cojín, tronco alineado con piernas. Desciende en bloque y sube hasta quedar recta, sin sobreextender la zona lumbar." },
+                    { name: "Curl alterno mancuernas", series: 2, reps: "12", group: "Biceps", description: "Codos pegados al torso. Eleva una mancuerna sin balancear tronco; baja controlando y alterna." },
+                    { name: "Pallof press polea", series: 2, reps: "12-15", group: "Core", description: "De pie, lateral a la polea. Asa a la altura del pecho. Extiende brazos al frente y resiste la rotación 12 s. Refuerza la estabilidad central." }
+                ]
+            },
+            {
+                day: "Día 3",
+                group: "Pierna",
+                color: "bg-red-500",
+                exercises: [
+                    { name: "Sentadilla goblet mancuernas", series: 3, reps: "12", group: "Pierna", description: "Sujeta mancuerna vertical al pecho. Baja caderas entre rodillas con espalda neutra y talones apoyados; sube empujando el suelo." },
+                    { name: "Zancadas caminando mancuernas", series: 3, reps: "10 c/p", group: "Pierna", description: "Paso largo adelante, rodilla trasera casi toca el suelo. Empuja con talón delantero y avanza." },
+                    { name: "Hip thrust barra", series: 3, reps: "10-12", group: "Glúteo", description: "Escápulas sobre banco, rodillas a 90°. Eleva cadera contrayendo glúteos hasta alinear tronco-muslos; baja controlando." },
+                    { name: "Extensión piernas máquina", series: 2, reps: "12-15", group: "Cuádriceps", description: "Ajusta eje a la altura de la rodilla. Extiende la pierna totalmente y baja 2s. Foco en cuádriceps." },
+                    { name: "Elevación talones máquina", series: 2, reps: "15", group: "Gemelos", description: "Pies paralelos bajo la plataforma. Empuja solo con tobillos y pausa 1s arriba. Trabaja gemelos." },
+                    { name: "Crunch polea (cable crunch)", series: 2, reps: "12-15", group: "Core", description: "Arrodillada, cuerda sobre la cabeza. Flexiona la columna llevando codos a rodillas, sin mover cadera. Controla la subida." }
+                ]
+            }
+        ];
+
+        // --- LÓGICA DE LA APLICACIÓN ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const workoutPlanContainer = document.getElementById('workout-plan');
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDetails = document.getElementById('modal-details');
+            const modalDescription = document.getElementById('modal-description');
+            const closeModalBtn = document.getElementById('close-modal');
+
+            // Función para generar el HTML de la rutina
+            function renderWorkoutPlan() {
+                let html = '';
+                workoutData.forEach(dayInfo => {
+                    html += `
+                        <section>
+                            <div class="flex items-center mb-4">
+                                <span class="w-3 h-3 rounded-full ${dayInfo.color} mr-3"></span>
+                                <h2 class="text-2xl md:text-3xl font-bold text-gray-800">${dayInfo.day}: <span class="font-semibold">${dayInfo.group}</span></h2>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    `;
+                    dayInfo.exercises.forEach(exercise => {
+                        html += `
+                            <div class="exercise-card bg-white p-5 rounded-lg shadow-md cursor-pointer border border-gray-200" data-description="${exercise.description}" data-name="${exercise.name}" data-details="${exercise.group} · ${exercise.series} series x ${exercise.reps} reps">
+                                <h3 class="font-semibold text-lg text-gray-800">${exercise.name}</h3>
+                                <p class="text-sm text-gray-500">${exercise.group} · ${exercise.series} series x ${exercise.reps} reps</p>
+                            </div>
+                        `;
+                    });
+                    html += `</div></section>`;
+                });
+                workoutPlanContainer.innerHTML = html;
+            }
+
+            // Función para abrir el modal
+            function openModal(name, details, description) {
+                modalTitle.textContent = name;
+                modalDetails.textContent = details;
+                modalDescription.innerHTML = `<p>${description}</p>`;
+                modal.classList.remove('hidden');
+                // Pequeño delay para la animación de entrada
+                setTimeout(() => {
+                    modalContent.classList.remove('scale-95', 'opacity-0');
+                    modalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            }
+            
+            // Función para cerrar el modal
+            function closeModal() {
+                modalContent.classList.add('scale-95', 'opacity-0');
+                modalContent.classList.remove('scale-100', 'opacity-100');
+                 // Esperar a que la animación termine para ocultar el modal
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+
+            // Renderizar la rutina al cargar la página
+            renderWorkoutPlan();
+
+            // Añadir event listener a los ejercicios
+            workoutPlanContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.exercise-card');
+                if (card) {
+                    const name = card.dataset.name;
+                    const details = card.dataset.details;
+                    const description = card.dataset.description;
+                    openModal(name, details, description);
+                }
+            });
+
+            // Event listeners para cerrar el modal
+            closeModalBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                // Si se hace clic en el fondo oscuro, se cierra el modal
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            // Cerrar el modal con la tecla Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
